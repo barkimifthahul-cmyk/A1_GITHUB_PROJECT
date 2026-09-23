@@ -21,3 +21,11 @@ data class OwnershipEntity(
 
 @Entity(tableName = "watchlist", primaryKeys = ["ticker"])
 data class WatchEntity(val ticker: String, val notifyEvents: Boolean = true, val notifyOwnership: Boolean = true)
+
+@Entity(tableName = "issuers")
+data class IssuerEntity(
+    @PrimaryKey val ticker: String,
+    val name: String,
+    val sector: String? = null,
+    val active: Boolean = true
+)

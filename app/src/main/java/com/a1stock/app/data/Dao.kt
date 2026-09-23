@@ -18,3 +18,20 @@ import androidx.room.*
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(row: WatchEntity)
     @Query("DELETE FROM watchlist WHERE ticker=:ticker") suspend fun remove(ticker:String)
 }
+
+@Dao
+interface IssuerDao {
+    @Query("""
+        SELECT * FROM issuers
+        WHERE active = 1
+        AND (ticker LIKE '%' || :query || '%' OR name LIKE '%' || :query || '%')
+        ORDER BY ticker
+    """)
+    suspend fun search(query: String): List<IssuerEntity>
+
+    @Query("SELECT * FROM issuers WHERE active = 1 ORDER BY ticker")
+    suspend fun all(): List<IssuerEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(rows: List<IssuerEntity>)
+}
