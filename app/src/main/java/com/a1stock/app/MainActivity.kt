@@ -17,6 +17,7 @@ import androidx.core.app.ActivityCompat
 import androidx.room.Room
 import androidx.work.*
 import com.a1stock.app.data.A1Database
+import com.a1stock.app.data.IssuerSeeder
 import com.a1stock.app.data.IssuerEntity
 import java.util.concurrent.TimeUnit
 
@@ -173,10 +174,13 @@ fun Scanner() {
             context,
             A1Database::class.java,
             "a1.db"
-        ).build()
+        )
+            .addMigrations(A1Database.MIGRATION_1_2)
+            .build()
     }
 
     LaunchedEffect(Unit) {
+        db.issuerDao().insertAll(IssuerSeeder.initialData())
         try {
             issuers = db.issuerDao().all()
         } catch (_: Exception) {

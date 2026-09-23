@@ -5,38 +5,29 @@ import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationCompat
 import androidx.room.Room
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.work.*
 import com.a1stock.app.data.A1Database
+import com.a1stock.app.data.IssuerSeeder
 import com.a1stock.app.data.SourceCollector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class SyncWorker(appContext: Context, params: WorkerParameters): CoroutineWorker(appContext, params) {
+class SyncWorker(
+    appContext: Context,
+    params: WorkerParameters
+) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result = try {
-        val migration = object : Migration(1, 2) {
-            override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("""
-                    CREATE TABLE IF NOT EXISTS issuers (
-                        ticker TEXT NOT NULL,
-                        name TEXT NOT NULL,
-                        sector TEXT,
-                        active INTEGER NOT NULL,
-                        PRIMARY KEY(ticker)
-                    )
-                """)
-            }
-        }
 
         val db = Room.databaseBuilder(
             applicationContext,
             A1Database::class.java,
             "a1.db"
         )
-            .addMigrations(migration)
+            .addMigrations(A1Database.MIGRATION_1_2)
             .build()
+
+        db.issuerDao().insertAll(IssuerSeeder.initialData())
 
         val events = SourceCollector().collectIdxAnnouncements()
 
@@ -44,11 +35,14 @@ class SyncWorker(appContext: Context, params: WorkerParameters): CoroutineWorker
             db.eventDao().insertAll(events)
         }.count { it != -1L }
 
-        if (inserted > 0) notifyUser(inserted)
+        if (inserted > 0) {
+            notifyUser(inserted)
+        }
 
         db.close()
         Result.success()
-    } catch(e: Exception) {
+
+    } catch (e: Exception) {
         Result.retry()
     }
 
