@@ -24,10 +24,10 @@ class MainActivity: ComponentActivity() {
     }
 }
 
-@Composable fun A1Screen(){
+@OptIn(ExperimentalMaterial3Api::class) @Composable fun A1Screen(){
     var tab by remember{mutableIntStateOf(0)}
     Scaffold(topBar={TopAppBar(title={Text("A1 • Stock Intelligence")})},bottomBar={
-        NavigationBar{ listOf("Dashboard","Scanner","Watchlist").forEachIndexed{ i,n->NavigationBarItem(tab==i,{tab=i},{Text(if(i==0)"⌂" else if(i==1)"⌕" else "★")},{Text(n)}) } }
+        NavigationBar { listOf("Dashboard","Scanner","Watchlist").forEachIndexed { i,n -> NavigationBarItem(selected = tab == i, onClick = { tab = i }, icon = { Text(if(i == 0) "⌂" else if(i == 1) "⌕" else "★") }, label = { Text(n) }) } }
     }){p->Box(Modifier.padding(p).fillMaxSize()){when(tab){0->Dashboard();1->Scanner();2->Watchlist()}}}
 }
 @Composable fun Dashboard(){LazyColumn(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){item{Text("A1",style=MaterialTheme.typography.headlineLarge)};item{Text("AUTO DATA ENGINE",style=MaterialTheme.typography.titleMedium)};item{Card(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text("Sinkronisasi otomatis: aktif");Text("Sumber utama: IDX/BEI");Text("Data ownership: sumber KSEI yang dipublikasikan melalui BEI");Text("Histori disimpan lokal di database A1")}}};item{Text("Fitur",style=MaterialTheme.typography.titleLarge)};item{Text("• Keterbukaan informasi\n• Corporate action\n• Pemegang saham\n• Deteksi perubahan\n• Watchlist & notifikasi")}}}
