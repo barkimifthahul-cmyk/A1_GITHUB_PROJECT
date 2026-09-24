@@ -72,9 +72,7 @@ fun A1Screen() {
         bottomBar = {
             NavigationBar {
                 listOf(
-                    "Dashboard",
-                    "Scanner",
-                    "Watchlist"
+                    "Dashboard", "Scanner", "Event", "Watchlist"
                 ).forEachIndexed { i, n ->
                     NavigationBarItem(
                         selected = tab == i,
