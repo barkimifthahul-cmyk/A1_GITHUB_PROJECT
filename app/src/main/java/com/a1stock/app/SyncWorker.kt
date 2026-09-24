@@ -5,12 +5,13 @@ import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationCompat
 import androidx.room.Room
-import androidx.work.*
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
 import com.a1stock.app.data.A1Database
 import com.a1stock.app.data.IssuerSeeder
-import com.a1stock.app.data.SourceCollector
 import com.a1stock.app.data.KseiCollector
 import com.a1stock.app.data.OwnershipCollector
+import com.a1stock.app.data.SourceCollector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -20,16 +21,20 @@ class SyncWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result = try {
-
         val db = Room.databaseBuilder(
             applicationContext,
             A1Database::class.java,
             "a1.db"
         )
-            .addMigrations(A1Database.MIGRATION_1_2, A1Database.MIGRATION_2_3)
+            .addMigrations(
+                A1Database.MIGRATION_1_2,
+                A1Database.MIGRATION_2_3
+            )
             .build()
 
-        db.issuerDao().insertAll(IssuerSeeder.initialData(applicationContext))
+        db.issuerDao().insertAll(
+            IssuerSeeder.initialData(applicationContext)
+        )
 
         val idxEvents = SourceCollector().collectIdxAnnouncements()
         val kseiEvents = KseiCollector().collectCorporateActions()
@@ -38,8 +43,16 @@ class SyncWorker(
         val ownershipRows = OwnershipCollector()
             .loadFromAsset(applicationContext)
 
+        val ownershipValid =
+            ownershipRows.isNotEmpty() &&
+            ownershipRows.all {
+                it.ticker.isNotBlank() &&
+                it.holder.isNotBlank() &&
+                (it.percentage ?: 0.0) >= 1.0
+            }
+
         withContext(Dispatchers.IO) {
-            if (ownershipRows.isNotEmpty()) {
+            if (ownershipValid) {
                 db.ownershipDao().replaceSnapshot(ownershipRows)
             }
         }
