@@ -111,6 +111,9 @@ fun A1Screen() {
 
 @Composable
 fun Dashboard() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var syncing by remember { mutableStateOf(false) }
+
     LazyColumn(
         Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -137,9 +140,42 @@ fun Dashboard() {
                     Modifier.padding(16.dp)
                 ) {
                     Text("Sinkronisasi otomatis: aktif")
-                    Text("Sumber utama: IDX/BEI")
-                    Text("Data ownership: sumber KSEI yang dipublikasikan melalui BEI")
+                    Text("Sumber utama: IDX/BEI + KSEI")
+                    Text("Data corporate action dari KSEI")
                     Text("Histori disimpan lokal di database A1")
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Button(
+                        onClick = {
+                            syncing = true
+
+                            val request =
+                                OneTimeWorkRequestBuilder<SyncWorker>()
+                                    .setConstraints(
+                                        Constraints.Builder()
+                                            .setRequiredNetworkType(
+                                                NetworkType.CONNECTED
+                                            )
+                                            .build()
+                                    )
+                                    .build()
+
+                            WorkManager.getInstance(context)
+                                .enqueue(request)
+
+                            syncing = false
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !syncing
+                    ) {
+                        Text(
+                            if (syncing)
+                                "Sinkronisasi..."
+                            else
+                                "🔄 Sinkronkan Sekarang"
+                        )
+                    }
                 }
             }
         }
