@@ -19,6 +19,7 @@ import androidx.work.*
 import com.a1stock.app.data.A1Database
 import com.a1stock.app.data.IssuerEntity
 import com.a1stock.app.data.IssuerSeeder
+import com.a1stock.app.data.EventEntity
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
@@ -73,6 +74,7 @@ fun A1Screen() {
                 listOf(
                     "Dashboard",
                     "Scanner",
+                    "Event",
                     "Watchlist"
                 ).forEachIndexed { i, n ->
                     NavigationBarItem(
@@ -103,7 +105,8 @@ fun A1Screen() {
             when (tab) {
                 0 -> Dashboard()
                 1 -> Scanner()
-                2 -> Watchlist()
+                2 -> EventScreen()
+                3 -> Watchlist()
             }
         }
     }
@@ -200,6 +203,100 @@ fun Dashboard() {
 }
 
 @Composable
+fun EventScreen() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    var events by remember {
+        mutableStateOf<List<EventEntity>>(emptyList())
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            val db = Room.databaseBuilder(
+                context,
+                A1Database::class.java,
+                "a1.db"
+            )
+                .addMigrations(
+                    A1Database.MIGRATION_1_2,
+                    A1Database.MIGRATION_2_3
+                )
+                .build()
+
+            events = db.eventDao().latest()
+            db.close()
+        } catch (_: Exception) {
+        }
+    }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            "Event",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Text(
+            "Corporate action & keterbukaan informasi",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        if (events.isEmpty()) {
+            Text(
+                "Belum ada event tersimpan. Tekan Sinkronkan Sekarang di Dashboard."
+            )
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(events) { event ->
+                    Card(
+                        Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Text(
+                                event.ticker ?: "UMUM",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+
+                            Text(
+                                event.category,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+
+                            Text(
+                                event.title,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+
+                            Text(
+                                "Sumber: ${event.source}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+
+                            event.publishedAt?.let {
+                                Text(
+                                    "Tanggal: $it",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun Scanner() {
     val context = androidx.compose.ui.platform.LocalContext.current
 
@@ -271,6 +368,7 @@ fun Scanner() {
     ) {
         Text(
             "Scanner",
+                    "Event",
             style = MaterialTheme.typography.headlineMedium
         )
 
