@@ -3,9 +3,14 @@ package com.a1stock.app
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
@@ -116,6 +121,39 @@ fun A1Screen() {
 @Composable
 fun Dashboard() {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val picker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (_: Exception) {
+            }
+
+            val request =
+                OneTimeWorkRequestBuilder<OwnershipImportWorker>()
+                    .setInputData(
+                        androidx.work.workDataOf(
+                            "uri" to uri.toString()
+                        )
+                    )
+                    .build()
+
+            WorkManager.getInstance(context).enqueue(request)
+
+            android.widget.Toast.makeText(
+                context,
+                "Import data ownership dimulai",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     var syncing by remember { mutableStateOf(false) }
 
     LazyColumn(
@@ -181,6 +219,20 @@ fun Dashboard() {
                         )
                     }
                 }
+            }
+        }
+
+        item {
+            Button(
+                onClick = {
+                    picker.launch(arrayOf(
+                        "text/*",
+                        "application/*"
+                    ))
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("📥 Import Data Kepemilikan IDX")
             }
         }
 
