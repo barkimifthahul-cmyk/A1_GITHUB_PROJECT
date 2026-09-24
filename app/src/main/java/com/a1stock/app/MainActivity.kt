@@ -8,6 +8,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -343,15 +345,20 @@ fun Scanner() {
     }
 
     var analysisMarket by remember { mutableStateOf<com.a1stock.app.data.MarketEntity?>(null) }
+    var analysisOwnership by remember { mutableStateOf<List<com.a1stock.app.data.OwnershipEntity>>(emptyList()) }
 
     LaunchedEffect(analysisIssuer?.ticker) {
-        analysisMarket = analysisIssuer?.let { db.marketDao().get(it.ticker) }
+        analysisIssuer?.let { issuer ->
+            analysisMarket = db.marketDao().get(issuer.ticker)
+            analysisOwnership = db.ownershipDao().byTicker(issuer.ticker)
+        }
     }
 
     analysisIssuer?.let { issuer ->
         AnalysisScreen(
             issuer = issuer,
             market = analysisMarket,
+            ownership = analysisOwnership,
             onBack = {
                 analysisIssuer = null
             }
@@ -459,12 +466,14 @@ fun Scanner() {
 fun AnalysisScreen(
     issuer: IssuerEntity,
     market: com.a1stock.app.data.MarketEntity?,
+    ownership: List<com.a1stock.app.data.OwnershipEntity>,
     onBack: () -> Unit
 ) {
     Column(
         Modifier
             .padding(16.dp)
-            .fillMaxSize(),
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Button(onClick = onBack) {
@@ -498,6 +507,26 @@ fun AnalysisScreen(
                 Text("Kode: ${issuer.ticker}")
                 Text("Nama: ${issuer.name}")
                 Text("Sektor: ${issuer.sector ?: "Belum tersedia"}")
+            }
+        }
+
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Pemegang Saham ≥1%", style = MaterialTheme.typography.titleMedium)
+
+                if (ownership.isEmpty()) {
+                    Text("Data kepemilikan belum tersedia untuk ${issuer.ticker}.")
+                } else {
+                    ownership.forEach { row ->
+                        Text(
+                            "${row.holder} — ${row.percentage ?: 0.0}%"
+                        )
+                        Text(
+                            "Saham: ${row.shares ?: 0} | Data: ${row.asOf}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
             }
         }
 

@@ -8,9 +8,25 @@ import androidx.room.*
 }
 
 @Dao interface OwnershipDao {
-    @Query("SELECT * FROM ownership ORDER BY importedAt DESC LIMIT 500") suspend fun latest(): List<OwnershipEntity>
-    @Query("SELECT * FROM ownership WHERE ticker=:ticker AND holder=:holder ORDER BY importedAt DESC LIMIT 2") suspend fun lastTwo(ticker:String, holder:String): List<OwnershipEntity>
+    @Query("SELECT * FROM ownership ORDER BY importedAt DESC LIMIT 500")
+    suspend fun latest(): List<OwnershipEntity>
+
+    @Query("SELECT * FROM ownership WHERE ticker=:ticker ORDER BY percentage DESC")
+    suspend fun byTicker(ticker: String): List<OwnershipEntity>
+
+    @Query("SELECT * FROM ownership WHERE ticker=:ticker AND holder=:holder ORDER BY importedAt DESC LIMIT 2")
+    suspend fun lastTwo(ticker:String, holder:String): List<OwnershipEntity>
+
+    @Query("DELETE FROM ownership")
+    suspend fun deleteAll()
+
     @Insert suspend fun insertAll(rows: List<OwnershipEntity>)
+
+    @androidx.room.Transaction
+    suspend fun replaceSnapshot(rows: List<OwnershipEntity>) {
+        deleteAll()
+        insertAll(rows)
+    }
 }
 
 @Dao interface WatchDao {

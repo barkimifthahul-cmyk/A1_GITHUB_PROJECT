@@ -10,6 +10,7 @@ import com.a1stock.app.data.A1Database
 import com.a1stock.app.data.IssuerSeeder
 import com.a1stock.app.data.SourceCollector
 import com.a1stock.app.data.KseiCollector
+import com.a1stock.app.data.OwnershipCollector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -33,6 +34,15 @@ class SyncWorker(
         val idxEvents = SourceCollector().collectIdxAnnouncements()
         val kseiEvents = KseiCollector().collectCorporateActions()
         val events = idxEvents + kseiEvents
+
+        val ownershipRows = OwnershipCollector()
+            .loadFromAsset(applicationContext)
+
+        withContext(Dispatchers.IO) {
+            if (ownershipRows.isNotEmpty()) {
+                db.ownershipDao().replaceSnapshot(ownershipRows)
+            }
+        }
 
         val inserted = withContext(Dispatchers.IO) {
             db.eventDao().insertAll(events)
