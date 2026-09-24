@@ -1,0 +1,54 @@
+name: Update A1 Ownership Data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 2 * * *'
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install tools
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install requests beautifulsoup4 pandas openpyxl
+
+      - name: Check IDX ownership page
+        run: |
+          python3 - <<'PY'
+          import requests
+
+          url = "https://www.idx.co.id/id/perusahaan-tercatat/data-kepemilikan-saham/"
+          r = requests.get(
+              url,
+              headers={"User-Agent": "Mozilla/5.0"},
+              timeout=30
+          )
+
+          print("HTTP:", r.status_code)
+          print("URL :", r.url)
+          print("SIZE:", len(r.text))
+
+          if r.status_code != 200:
+              raise SystemExit("IDX ownership page gagal diakses")
+
+          if "Data Kepemilikan Saham" not in r.text:
+              raise SystemExit("Halaman kepemilikan IDX tidak ditemukan")
+
+          print("IDX ownership page OK")
+          PY
+
+      - name: Validate current A1 ownership dataset
+        run: |
+          python3 collector/validate_ownership.py \
+            ownership_reference/data/kepemilikan_saham_20260227.csv
