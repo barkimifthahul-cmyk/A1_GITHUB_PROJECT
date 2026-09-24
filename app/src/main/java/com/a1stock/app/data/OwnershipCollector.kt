@@ -215,6 +215,25 @@ class OwnershipCollector {
                 }
             }
 
+            android.util.Log.d(
+                "A1_OWNERSHIP",
+                "XLSX selesai dibaca: rows=${rows.size}, asOf=$asOf, minimum=$minimum"
+            )
+
+            rows.take(20).forEachIndexed { index, row ->
+                android.util.Log.d(
+                    "A1_OWNERSHIP",
+                    "ROW[$index] ticker=${row.ticker} holder=${row.holder} shares=${row.shares} percentage=${row.percentage} asOf=${row.asOf}"
+                )
+            }
+
+            if (rows.isEmpty()) {
+                android.util.Log.e(
+                    "A1_OWNERSHIP",
+                    "TIDAK ADA DATA OWNERSHIP YANG LOLOS FILTER >= $minimum%"
+                )
+            }
+
             return normalize(rows)
         }
     }
