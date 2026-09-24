@@ -469,6 +469,14 @@ fun AnalysisScreen(
     ownership: List<com.a1stock.app.data.OwnershipEntity>,
     onBack: () -> Unit
 ) {
+    val ownership5 = ownership.filter {
+        (it.percentage ?: 0.0) >= 5.0
+    }
+
+    val ownership1 = ownership.filter {
+        (it.percentage ?: 0.0) >= 1.0
+    }
+
     Column(
         Modifier
             .padding(16.dp)
@@ -480,17 +488,30 @@ fun AnalysisScreen(
             Text("← Kembali")
         }
 
-        Text("ANALISIS EMITEN", style = MaterialTheme.typography.headlineMedium)
-        Text(issuer.ticker, style = MaterialTheme.typography.headlineLarge)
+        Text(
+            "ANALISIS EMITEN",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Text(
+            issuer.ticker,
+            style = MaterialTheme.typography.headlineLarge
+        )
+
         Text(issuer.name)
 
         Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Data Market", style = MaterialTheme.typography.titleMedium)
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "Data Market",
+                    style = MaterialTheme.typography.titleMedium
+                )
 
                 if (market == null) {
                     Text("Data market belum tersedia.")
-                    Text("Harga, volume, dan market cap akan muncul setelah sumber data terhubung.")
                 } else {
                     Text("Harga: ${market.price ?: 0.0}")
                     Text("Perubahan: ${market.change ?: 0.0}")
@@ -502,8 +523,14 @@ fun AnalysisScreen(
         }
 
         Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Profil Emiten")
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "Profil Emiten",
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Text("Kode: ${issuer.ticker}")
                 Text("Nama: ${issuer.name}")
                 Text("Sektor: ${issuer.sector ?: "Belum tersedia"}")
@@ -511,28 +538,91 @@ fun AnalysisScreen(
         }
 
         Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Pemegang Saham ≥1%", style = MaterialTheme.typography.titleMedium)
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "PEMEGANG SAHAM ≥5%",
+                    style = MaterialTheme.typography.titleMedium
+                )
 
-                if (ownership.isEmpty()) {
-                    Text("Data kepemilikan belum tersedia untuk ${issuer.ticker}.")
+                if (ownership5.isEmpty()) {
+                    Text("Belum ada data pemegang saham ≥5%.")
                 } else {
-                    ownership.forEach { row ->
-                        Text(
-                            "${row.holder} — ${row.percentage ?: 0.0}%"
-                        )
-                        Text(
-                            "Saham: ${row.shares ?: 0} | Data: ${row.asOf}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+                    ownership5
+                        .sortedByDescending { it.percentage ?: 0.0 }
+                        .forEach { row ->
+                            Text(
+                                row.holder,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                "${row.percentage ?: 0.0}%"
+                            )
+                            Text(
+                                "Saham: ${row.shares ?: 0} | Data: ${row.asOf}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                 }
             }
         }
 
         Card(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Modul Analisis")
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "PERUBAHAN TERBARU",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Text("Belum ada data perubahan yang terhubung.")
+                Text(
+                    "Nantinya A1 akan menampilkan pemegang saham yang masuk, keluar, naik, atau turun di atas 5%."
+                )
+            }
+        }
+
+        Card(Modifier.fillMaxWidth()) {
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "PEMEGANG SAHAM ≥1%",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                if (ownership1.isEmpty()) {
+                    Text("Data kepemilikan belum tersedia.")
+                } else {
+                    ownership1
+                        .sortedByDescending { it.percentage ?: 0.0 }
+                        .forEach { row ->
+                            Text(
+                                "${row.holder} — ${row.percentage ?: 0.0}%"
+                            )
+                            Text(
+                                "Saham: ${row.shares ?: 0} | Data: ${row.asOf}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                }
+            }
+        }
+
+        Card(Modifier.fillMaxWidth()) {
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "MODUL ANALISIS",
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Text("• Corporate Action")
                 Text("• Kepemilikan")
                 Text("• Keterbukaan Informasi")
