@@ -10,9 +10,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         EventEntity::class,
         OwnershipEntity::class,
         WatchEntity::class,
-        IssuerEntity::class
+        IssuerEntity::class,
+        MarketEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class A1Database : RoomDatabase() {
@@ -21,6 +22,7 @@ abstract class A1Database : RoomDatabase() {
     abstract fun ownershipDao(): OwnershipDao
     abstract fun watchDao(): WatchDao
     abstract fun issuerDao(): IssuerDao
+    abstract fun marketDao(): MarketDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -31,6 +33,23 @@ abstract class A1Database : RoomDatabase() {
                         name TEXT NOT NULL,
                         sector TEXT,
                         active INTEGER NOT NULL,
+                        PRIMARY KEY(ticker)
+                    )
+                """)
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS market_data (
+                        ticker TEXT NOT NULL,
+                        price REAL,
+                        change REAL,
+                        changePercent REAL,
+                        volume INTEGER,
+                        marketCap INTEGER,
+                        updatedAt INTEGER NOT NULL,
                         PRIMARY KEY(ticker)
                     )
                 """)

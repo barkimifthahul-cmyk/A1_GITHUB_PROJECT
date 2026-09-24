@@ -29,3 +29,14 @@ data class IssuerEntity(
     val sector: String? = null,
     val active: Boolean = true
 )
+
+@Entity(tableName = "market_data")
+data class MarketEntity(
+    @PrimaryKey val ticker: String,
+    val price: Double?,
+    val change: Double?,
+    val changePercent: Double?,
+    val volume: Long?,
+    val marketCap: Long?,
+    val updatedAt: Long
+)

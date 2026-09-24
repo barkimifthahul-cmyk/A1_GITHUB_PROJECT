@@ -35,3 +35,18 @@ interface IssuerDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(rows: List<IssuerEntity>)
 }
+
+@Dao
+interface MarketDao {
+    @Query("SELECT * FROM market_data ORDER BY ticker")
+    suspend fun all(): List<MarketEntity>
+
+    @Query("SELECT * FROM market_data WHERE ticker = :ticker LIMIT 1")
+    suspend fun get(ticker: String): MarketEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(row: MarketEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(rows: List<MarketEntity>)
+}

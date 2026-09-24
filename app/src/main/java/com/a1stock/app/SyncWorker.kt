@@ -24,7 +24,7 @@ class SyncWorker(
             A1Database::class.java,
             "a1.db"
         )
-            .addMigrations(A1Database.MIGRATION_1_2)
+            .addMigrations(A1Database.MIGRATION_1_2, A1Database.MIGRATION_2_3)
             .build()
 
         db.issuerDao().insertAll(IssuerSeeder.initialData(applicationContext))
