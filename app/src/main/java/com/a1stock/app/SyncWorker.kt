@@ -9,6 +9,7 @@ import androidx.work.*
 import com.a1stock.app.data.A1Database
 import com.a1stock.app.data.IssuerSeeder
 import com.a1stock.app.data.SourceCollector
+import com.a1stock.app.data.KseiCollector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -29,7 +30,9 @@ class SyncWorker(
 
         db.issuerDao().insertAll(IssuerSeeder.initialData(applicationContext))
 
-        val events = SourceCollector().collectIdxAnnouncements()
+        val idxEvents = SourceCollector().collectIdxAnnouncements()
+        val kseiEvents = KseiCollector().collectCorporateActions()
+        val events = idxEvents + kseiEvents
 
         val inserted = withContext(Dispatchers.IO) {
             db.eventDao().insertAll(events)
@@ -65,7 +68,7 @@ class SyncWorker(
         )
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("A1: informasi baru")
-            .setContentText("$n event baru dari sumber IDX/BEI")
+            .setContentText("$n event baru dari IDX/BEI dan KSEI")
             .setAutoCancel(true)
             .build()
 
