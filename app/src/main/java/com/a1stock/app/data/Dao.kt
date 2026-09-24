@@ -8,8 +8,8 @@ import androidx.room.*
 }
 
 @Dao interface OwnershipDao {
-    @Query("SELECT * FROM ownership ORDER BY importedAt DESC LIMIT 500")
-    suspend fun latest(): List<OwnershipEntity>
+    @Query("SELECT * FROM ownership ORDER BY ticker, holder")
+    suspend fun all(): List<OwnershipEntity>
 
     @Query("SELECT * FROM ownership WHERE ticker=:ticker ORDER BY percentage DESC")
     suspend fun byTicker(ticker: String): List<OwnershipEntity>

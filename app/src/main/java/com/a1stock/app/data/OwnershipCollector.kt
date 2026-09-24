@@ -31,16 +31,16 @@ class OwnershipCollector {
         }
     }
 
-    fun loadFromAsset(context: Context): List<OwnershipEntity> {
+    fun loadFromAsset(context: Context, assetName: String = "kepemilikan_saham_20260227.csv", threshold: String = ">=1%", sourceUrl: String = "IDX/KSEI"): List<OwnershipEntity> {
         val rows = mutableListOf<OwnershipRow>()
 
-        context.assets.open("kepemilikan_saham_20260227.csv")
+        context.assets.open(assetName)
             .bufferedReader()
             .useLines { lines ->
 
                 lines.drop(1).forEach { line ->
 
-                    val columns = line.split(",")
+                    val columns = line.split(",").map { it.trim().removeSurrounding("\"") }
 
                     if (columns.size < 12) return@forEach
 
@@ -66,8 +66,8 @@ class OwnershipCollector {
                                 percentage = percentage,
                                 shares = shares,
                                 asOf = date,
-                                threshold = ">=1%",
-                                sourceUrl = "KSEI/BEI dataset 27-Feb-2026"
+                                threshold = threshold,
+                                sourceUrl = sourceUrl
                             )
                         )
                     }
