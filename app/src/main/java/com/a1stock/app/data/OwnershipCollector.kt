@@ -258,7 +258,7 @@ class OwnershipCollector {
 
         for (i in 0 until items.length) {
 
-            val item = items.item(i)
+            val item = items.item(i) as org.w3c.dom.Element
             val textNodes = item.getElementsByTagName("t")
 
             val builder = StringBuilder()
