@@ -17,7 +17,8 @@ class OwnershipImportWorker(
     params: WorkerParameters
 ) : CoroutineWorker(appContext, params) {
 
-    override suspend fun doWork(): Result = try {
+    override suspend fun doWork(): Result {
+        return try {
 
         val uriString = inputData.getString("uri")
             ?: return Result.failure()
@@ -130,6 +131,7 @@ class OwnershipImportWorker(
         Result.failure()
     }
 
+    }
     private fun notifyUser(rows: Int, changes: Int) {
 
         val notificationManager =
