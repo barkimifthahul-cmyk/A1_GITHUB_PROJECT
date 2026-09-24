@@ -17,8 +17,8 @@ import androidx.core.app.ActivityCompat
 import androidx.room.Room
 import androidx.work.*
 import com.a1stock.app.data.A1Database
-import com.a1stock.app.data.IssuerSeeder
 import com.a1stock.app.data.IssuerEntity
+import com.a1stock.app.data.IssuerSeeder
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
@@ -80,9 +80,11 @@ fun A1Screen() {
                         onClick = { tab = i },
                         icon = {
                             Text(
-                                if (i == 0) "⌂"
-                                else if (i == 1) "⌕"
-                                else "★"
+                                when (i) {
+                                    0 -> "⌂"
+                                    1 -> "⌕"
+                                    else -> "★"
+                                }
                             )
                         },
                         label = {
@@ -166,8 +168,15 @@ fun Scanner() {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     var query by remember { mutableStateOf("") }
-    var issuers by remember { mutableStateOf<List<IssuerEntity>>(emptyList()) }
-    var selectedIssuer by remember { mutableStateOf<IssuerEntity?>(null) }
+    var issuers by remember {
+        mutableStateOf<List<IssuerEntity>>(emptyList())
+    }
+    var selectedIssuer by remember {
+        mutableStateOf<IssuerEntity?>(null)
+    }
+    var analysisIssuer by remember {
+        mutableStateOf<IssuerEntity?>(null)
+    }
 
     val db = remember {
         Room.databaseBuilder(
@@ -180,8 +189,8 @@ fun Scanner() {
     }
 
     LaunchedEffect(Unit) {
-        db.issuerDao().insertAll(IssuerSeeder.initialData())
         try {
+            db.issuerDao().insertAll(IssuerSeeder.initialData())
             issuers = db.issuerDao().all()
         } catch (_: Exception) {
         }
@@ -199,6 +208,16 @@ fun Scanner() {
             } catch (_: Exception) {
             }
         }
+    }
+
+    analysisIssuer?.let { issuer ->
+        AnalysisScreen(
+            issuer = issuer,
+            onBack = {
+                analysisIssuer = null
+            }
+        )
+        return
     }
 
     Column(
@@ -238,6 +257,7 @@ fun Scanner() {
                         issuer.ticker,
                         style = MaterialTheme.typography.titleLarge
                     )
+
                     Text(issuer.name)
 
                     Spacer(
@@ -245,7 +265,9 @@ fun Scanner() {
                     )
 
                     Button(
-                        onClick = { }
+                        onClick = {
+                            analysisIssuer = issuer
+                        }
                     ) {
                         Text("Analisa ${issuer.ticker}")
                     }
@@ -277,6 +299,7 @@ fun Scanner() {
                                 issuer.ticker,
                                 style = MaterialTheme.typography.titleMedium
                             )
+
                             Text(issuer.name)
 
                             issuer.sector?.let {
@@ -288,6 +311,73 @@ fun Scanner() {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun AnalysisScreen(
+    issuer: IssuerEntity,
+    onBack: () -> Unit
+) {
+    Column(
+        Modifier
+            .padding(16.dp)
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Button(
+            onClick = onBack
+        ) {
+            Text("← Kembali")
+        }
+
+        Text(
+            "ANALISIS EMITEN",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Text(
+            issuer.ticker,
+            style = MaterialTheme.typography.headlineLarge
+        )
+
+        Text(issuer.name)
+
+        Card(
+            Modifier.fillMaxWidth()
+        ) {
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Profil Emiten")
+
+                Text("Kode: ${issuer.ticker}")
+
+                Text("Nama: ${issuer.name}")
+
+                Text(
+                    "Sektor: ${issuer.sector ?: "Belum tersedia"}"
+                )
+            }
+        }
+
+        Card(
+            Modifier.fillMaxWidth()
+        ) {
+            Column(
+                Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Modul Analisis")
+
+                Text("• Corporate Action")
+                Text("• Kepemilikan")
+                Text("• Keterbukaan Informasi")
+                Text("• Perubahan Pemegang Saham")
+                Text("• RUPS")
             }
         }
     }
