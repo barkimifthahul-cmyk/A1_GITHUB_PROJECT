@@ -210,9 +210,16 @@ fun Scanner() {
         }
     }
 
+    var analysisMarket by remember { mutableStateOf<com.a1stock.app.data.MarketEntity?>(null) }
+
+    LaunchedEffect(analysisIssuer?.ticker) {
+        analysisMarket = analysisIssuer?.let { db.marketDao().get(it.ticker) }
+    }
+
     analysisIssuer?.let { issuer ->
         AnalysisScreen(
             issuer = issuer,
+            market = analysisMarket,
             onBack = {
                 analysisIssuer = null
             }
@@ -319,6 +326,7 @@ fun Scanner() {
 @Composable
 fun AnalysisScreen(
     issuer: IssuerEntity,
+    market: com.a1stock.app.data.MarketEntity?,
     onBack: () -> Unit
 ) {
     Column(
@@ -327,52 +335,43 @@ fun AnalysisScreen(
             .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Button(
-            onClick = onBack
-        ) {
+        Button(onClick = onBack) {
             Text("← Kembali")
         }
 
-        Text(
-            "ANALISIS EMITEN",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Text(
-            issuer.ticker,
-            style = MaterialTheme.typography.headlineLarge
-        )
-
+        Text("ANALISIS EMITEN", style = MaterialTheme.typography.headlineMedium)
+        Text(issuer.ticker, style = MaterialTheme.typography.headlineLarge)
         Text(issuer.name)
 
-        Card(
-            Modifier.fillMaxWidth()
-        ) {
-            Column(
-                Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text("Profil Emiten")
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Data Market", style = MaterialTheme.typography.titleMedium)
 
-                Text("Kode: ${issuer.ticker}")
-
-                Text("Nama: ${issuer.name}")
-
-                Text(
-                    "Sektor: ${issuer.sector ?: "Belum tersedia"}"
-                )
+                if (market == null) {
+                    Text("Data market belum tersedia.")
+                    Text("Harga, volume, dan market cap akan muncul setelah sumber data terhubung.")
+                } else {
+                    Text("Harga: ${market.price ?: 0.0}")
+                    Text("Perubahan: ${market.change ?: 0.0}")
+                    Text("Perubahan %: ${market.changePercent ?: 0.0}%")
+                    Text("Volume: ${market.volume ?: 0}")
+                    Text("Market Cap: ${market.marketCap ?: 0}")
+                }
             }
         }
 
-        Card(
-            Modifier.fillMaxWidth()
-        ) {
-            Column(
-                Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text("Modul Analisis")
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Profil Emiten")
+                Text("Kode: ${issuer.ticker}")
+                Text("Nama: ${issuer.name}")
+                Text("Sektor: ${issuer.sector ?: "Belum tersedia"}")
+            }
+        }
 
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Modul Analisis")
                 Text("• Corporate Action")
                 Text("• Kepemilikan")
                 Text("• Keterbukaan Informasi")
