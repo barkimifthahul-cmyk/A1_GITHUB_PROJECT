@@ -74,7 +74,6 @@ fun A1Screen() {
                 listOf(
                     "Dashboard",
                     "Scanner",
-                    "Event",
                     "Watchlist"
                 ).forEachIndexed { i, n ->
                     NavigationBarItem(
@@ -368,7 +367,6 @@ fun Scanner() {
     ) {
         Text(
             "Scanner",
-                    "Event",
             style = MaterialTheme.typography.headlineMedium
         )
 
