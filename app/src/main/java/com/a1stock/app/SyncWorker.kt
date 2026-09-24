@@ -27,7 +27,7 @@ class SyncWorker(
             .addMigrations(A1Database.MIGRATION_1_2)
             .build()
 
-        db.issuerDao().insertAll(IssuerSeeder.initialData())
+        db.issuerDao().insertAll(IssuerSeeder.initialData(applicationContext))
 
         val events = SourceCollector().collectIdxAnnouncements()
 

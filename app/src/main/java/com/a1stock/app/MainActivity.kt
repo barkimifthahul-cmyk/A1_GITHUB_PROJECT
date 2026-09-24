@@ -190,7 +190,7 @@ fun Scanner() {
 
     LaunchedEffect(Unit) {
         try {
-            db.issuerDao().insertAll(IssuerSeeder.initialData())
+            db.issuerDao().insertAll(IssuerSeeder.initialData(context))
             issuers = db.issuerDao().all()
         } catch (_: Exception) {
         }
