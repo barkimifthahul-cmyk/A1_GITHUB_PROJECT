@@ -330,6 +330,13 @@ fun EventScreen() {
                                 style = MaterialTheme.typography.bodyLarge
                             )
 
+                            event.summary?.takeIf { it.isNotBlank() }?.let { summary ->
+                                Text(
+                                    summary,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+
                             Text(
                                 "Sumber: ${event.source}",
                                 style = MaterialTheme.typography.bodySmall
