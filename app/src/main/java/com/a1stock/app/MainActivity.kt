@@ -445,8 +445,13 @@ fun Scanner() {
 
     LaunchedEffect(analysisIssuer?.ticker) {
         analysisIssuer?.let { issuer ->
-            analysisMarket = db.marketDao().get(issuer.ticker)
-            analysisOwnership = db.ownershipDao().byTicker(issuer.ticker)
+            try {
+                analysisMarket = db.marketDao().get(issuer.ticker)
+                analysisOwnership = db.ownershipDao().byTicker(issuer.ticker)
+            } catch (_: Exception) {
+                analysisMarket = null
+                analysisOwnership = emptyList()
+            }
         }
     }
 
@@ -521,6 +526,11 @@ fun Scanner() {
             Text(
                 "Daftar emiten",
                 style = MaterialTheme.typography.titleMedium
+            )
+
+            Text(
+                "Data ownership akan ditampilkan setelah Excel berhasil di-import.",
+                style = MaterialTheme.typography.bodySmall
             )
 
             LazyColumn(
