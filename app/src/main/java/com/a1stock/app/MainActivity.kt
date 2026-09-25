@@ -384,22 +384,59 @@ fun Scanner() {
     LaunchedEffect(Unit) {
         try {
             db.issuerDao().insertAll(IssuerSeeder.initialData(context))
-            issuers = db.issuerDao().all()
+
+            val issuerList = db.issuerDao().all()
+            val ownershipTickers = db.ownershipDao().tickers()
+
+            val existing = issuerList.associateBy { it.ticker }.toMutableMap()
+
+            ownershipTickers.forEach { ticker ->
+                if (!existing.containsKey(ticker)) {
+                    existing[ticker] = IssuerEntity(
+                        ticker = ticker,
+                        name = ticker,
+                        sector = null,
+                        active = true
+                    )
+                }
+            }
+
+            issuers = existing.values.sortedBy { it.ticker }
         } catch (_: Exception) {
         }
     }
 
     LaunchedEffect(query) {
-        if (query.isNotBlank()) {
-            try {
-                issuers = db.issuerDao().search(query.trim())
-            } catch (_: Exception) {
+        try {
+            db.issuerDao().insertAll(IssuerSeeder.initialData(context))
+
+            val issuerList = db.issuerDao().all()
+            val ownershipTickers = db.ownershipDao().tickers()
+
+            val existing = issuerList.associateBy { it.ticker }.toMutableMap()
+
+            ownershipTickers.forEach { ticker ->
+                if (!existing.containsKey(ticker)) {
+                    existing[ticker] = IssuerEntity(
+                        ticker = ticker,
+                        name = ticker,
+                        sector = null,
+                        active = true
+                    )
+                }
             }
-        } else {
-            try {
-                issuers = db.issuerDao().all()
-            } catch (_: Exception) {
+
+            val merged = existing.values.sortedBy { it.ticker }
+
+            issuers = if (query.isNotBlank()) {
+                merged.filter {
+                    it.ticker.contains(query.trim(), ignoreCase = true) ||
+                    it.name.contains(query.trim(), ignoreCase = true)
+                }
+            } else {
+                merged
             }
+        } catch (_: Exception) {
         }
     }
 

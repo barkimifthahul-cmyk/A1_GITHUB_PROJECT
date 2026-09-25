@@ -14,6 +14,9 @@ import androidx.room.*
     @Query("SELECT * FROM ownership WHERE ticker=:ticker ORDER BY percentage DESC")
     suspend fun byTicker(ticker: String): List<OwnershipEntity>
 
+    @Query("SELECT DISTINCT ticker FROM ownership ORDER BY ticker")
+    suspend fun tickers(): List<String>
+
     @Query("SELECT * FROM ownership WHERE ticker=:ticker AND holder=:holder ORDER BY importedAt DESC LIMIT 2")
     suspend fun lastTwo(ticker:String, holder:String): List<OwnershipEntity>
 
