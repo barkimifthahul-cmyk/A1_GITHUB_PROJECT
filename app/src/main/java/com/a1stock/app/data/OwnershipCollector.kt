@@ -118,101 +118,120 @@ class OwnershipCollector {
         threshold: String,
         sourceUrl: String
     ): List<OwnershipEntity> {
-
         val minimum = minimumPercentage(threshold)
 
         val input = context.contentResolver.openInputStream(uri)
             ?: throw IllegalStateException("Tidak dapat membuka file Excel")
 
         input.use { stream ->
-
             val entries = unzipXlsx(stream)
 
-            val sharedStrings = parseSharedStrings(
-                entries["xl/sharedStrings.xml"]
-            )
+            val sharedStrings =
+                parseSharedStrings(entries["xl/sharedStrings.xml"])
 
-            val sheetXml = entries["xl/worksheets/sheet1.xml"]
-                ?: throw IllegalStateException("Sheet Excel tidak ditemukan")
+            val sheetXml =
+                entries["xl/worksheets/sheet1.xml"]
+                    ?: throw IllegalStateException("Sheet Excel tidak ditemukan")
 
             val document = DocumentBuilderFactory
                 .newInstance()
                 .newDocumentBuilder()
                 .parse(sheetXml.inputStream())
 
-            val cells = document.getElementsByTagName("c")
+            val rowNodes = document.getElementsByTagName("row")
             val rows = mutableListOf<OwnershipRow>()
 
             var asOf = ""
 
-            val firstStrings = sharedStrings.take(1)
-            if (firstStrings.isNotEmpty()) {
-                asOf = extractDate(firstStrings[0])
-            }
+            /*
+             * Baca seluruh sheet per BARIS.
+             * Ini penting supaya ticker, holder, saham dan persentase
+             * berasal dari baris Excel yang sama.
+             */
+            for (i in 0 until rowNodes.length) {
+                val rowNode = rowNodes.item(i)
+                val cells = rowNode.childNodes
 
-            for (i in 0 until cells.length) {
+                val values = mutableMapOf<String, String>()
 
-                val cell = cells.item(i)
-                val ref = cell.attributes
-                    ?.getNamedItem("r")
-                    ?.nodeValue
-                    ?: continue
+                for (j in 0 until cells.length) {
+                    val cell = cells.item(j)
 
-                val rowNumber = ref
-                    .filter { it.isDigit() }
-                    .toIntOrNull()
-                    ?: continue
+                    if (cell.nodeName != "c") continue
 
-                if (rowNumber < 5) continue
+                    val ref = cell.attributes
+                        ?.getNamedItem("r")
+                        ?.nodeValue
+                        ?: continue
 
-                val column = ref
-                    .filter { it.isLetter() }
-                    .uppercase()
+                    val column = ref
+                        .filter { it.isLetter() }
+                        .uppercase()
 
-                val value = readCellValue(cell, sharedStrings)
+                    values[column] =
+                        readCellValue(cell, sharedStrings).trim()
+                }
 
-                when (column) {
-                    "B" -> {
-                        currentTicker = value.trim()
-                    }
-
-                    "E" -> {
-                        currentHolder = value.trim()
-                    }
-
-                    "P" -> {
-                        currentShares = parseLong(value)
-                    }
-
-                    "Q" -> {
-                        val percentage = parseDouble(value)
-
-                        if (
-                            currentTicker.isNotBlank() &&
-                            currentHolder.isNotBlank() &&
-                            percentage != null &&
-                            percentage >= minimum
-                        ) {
-                            rows.add(
-                                OwnershipRow(
-                                    ticker = currentTicker,
-                                    holder = currentHolder,
-                                    percentage = percentage,
-                                    shares = currentShares,
-                                    asOf = asOf,
-                                    threshold = threshold,
-                                    sourceUrl = sourceUrl
-                                )
-                            )
-                        }
-
-                        currentShares = null
+                /*
+                 * Ambil tanggal dari judul jika tersedia.
+                 * Biasanya ada pada bagian awal Excel.
+                 */
+                if (asOf.isBlank()) {
+                    values.values.firstOrNull {
+                        it.contains("per tanggal", ignoreCase = true)
+                    }?.let {
+                        asOf = extractDate(it)
                     }
                 }
 
-                if (column == "A") {
-                    // Tidak digunakan; nomor baris hanya informasi tampilan Excel.
+                /*
+                 * Fallback apabila tanggal tidak ditemukan
+                 * dari shared string/judul.
+                 */
+                if (asOf.isBlank()) {
+                    values.values.firstOrNull {
+                        Regex("""\d{1,2}[-/]\d{1,2}[-/]\d{2,4}""")
+                            .containsMatchIn(it)
+                    }?.let {
+                        asOf = it
+                    }
                 }
+
+                if (values.isEmpty()) continue
+
+                val ticker = values["B"]
+                    ?.trim()
+                    ?.uppercase()
+                    ?: ""
+
+                val holder = values["E"]
+                    ?.trim()
+                    ?: ""
+
+                val shares = parseLong(values["P"])
+                val percentage = parseDouble(values["Q"])
+
+                /*
+                 * Abaikan header dan baris kosong.
+                 */
+                if (ticker.isBlank() || holder.isBlank()) continue
+
+                /*
+                 * Hanya masukkan data yang memenuhi threshold.
+                 */
+                if (percentage == null || percentage < minimum) continue
+
+                rows.add(
+                    OwnershipRow(
+                        ticker = ticker,
+                        holder = holder,
+                        percentage = percentage,
+                        shares = shares,
+                        asOf = asOf,
+                        threshold = threshold,
+                        sourceUrl = sourceUrl
+                    )
+                )
             }
 
             android.util.Log.d(
@@ -223,7 +242,7 @@ class OwnershipCollector {
             rows.take(20).forEachIndexed { index, row ->
                 android.util.Log.d(
                     "A1_OWNERSHIP",
-                    "ROW[$index] ticker=${row.ticker} holder=${row.holder} shares=${row.shares} percentage=${row.percentage} asOf=${row.asOf}"
+                    "ROW[$index] ticker=${row.ticker} holder=${row.holder} shares=${row.shares} percentage=${row.percentage}"
                 )
             }
 
@@ -237,10 +256,6 @@ class OwnershipCollector {
             return normalize(rows)
         }
     }
-
-    private var currentTicker = ""
-    private var currentHolder = ""
-    private var currentShares: Long? = null
 
     private fun unzipXlsx(input: InputStream): Map<String, ByteArray> {
 
@@ -334,19 +349,45 @@ class OwnershipCollector {
         return ""
     }
 
-    private fun parseLong(value: String): Long? {
-        return value
+    private fun parseLong(value: String?): Long? {
+        if (value == null) return null
+
+        val v = value
+            .replace("%", "")
+            .replace(" ", "")
+            .trim()
+
+        if (v.isBlank()) return null
+
+        return v
             .replace(",", "")
             .replace(".", "")
-            .trim()
             .toLongOrNull()
     }
 
-    private fun parseDouble(value: String): Double? {
-        return value
-            .replace(",", ".")
+    private fun parseDouble(value: String?): Double? {
+        if (value == null) return null
+
+        var v = value
+            .replace("%", "")
+            .replace(" ", "")
             .trim()
-            .toDoubleOrNull()
+
+        if (v.isBlank()) return null
+
+        v = when {
+            v.contains(",") && v.contains(".") -> {
+                if (v.lastIndexOf(",") > v.lastIndexOf(".")) {
+                    v.replace(".", "").replace(",", ".")
+                } else {
+                    v.replace(",", "")
+                }
+            }
+            v.contains(",") -> v.replace(",", ".")
+            else -> v
+        }
+
+        return v.toDoubleOrNull()
     }
 
     private fun minimumPercentage(threshold: String): Double {
